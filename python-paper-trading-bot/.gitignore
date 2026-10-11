@@ -1,0 +1,6 @@
+portfolio.json
+trades.csv
+__pycache__/
+*.py[cod]
+.venv/
+.env
