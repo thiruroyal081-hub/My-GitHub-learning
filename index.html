@@ -17,7 +17,7 @@
       <input id="stockSearch" type="search" placeholder="Search stocks, companies..." autocomplete="off" aria-label="Search stocks">
       <kbd>⌘ K</kbd>
     </form>
-    <div class="top-actions"><span class="demo-pill"><i></i> DEMO DATA</span><a class="login-link" href="fno-paper-trading/">F&amp;O paper trading <span>↗</span></a></div>
+    <div class="top-actions"><span class="demo-pill" id="dataModeBadge"><i></i> DEMO DATA</span><a class="login-link" href="fno-paper-trading/">F&amp;O paper trading <span>↗</span></a></div>
   </header>
 
   <div class="layout">
@@ -30,7 +30,7 @@
     </aside>
 
     <main class="main-content">
-      <div class="page-heading"><div><p class="eyebrow">MARKETS / INDIA</p><h1 id="pageTitle">Explore stocks</h1><p class="page-subtitle">Discover companies and follow the market in one place.</p></div><span class="market-chip"><span class="pulse"></span> Sample market snapshot</span></div>
+      <div class="page-heading"><div><p class="eyebrow">MARKETS / INDIA</p><h1 id="pageTitle">Explore stocks</h1><p class="page-subtitle">Discover companies and follow the market in one place.</p></div><span class="market-chip" id="marketStatus"><span class="pulse"></span> Sample market snapshot</span></div>
 
       <section class="index-grid" aria-label="Market index overview">
         <article class="index-card"><div class="index-top"><span>NIFTY 50</span><span class="index-symbol">N</span></div><strong>24,812.50</strong><div class="index-change positive">+186.40 <span>(+0.76%)</span></div><div class="sparkline" data-spark="nifty"></div></article>
