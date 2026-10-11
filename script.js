@@ -133,6 +133,7 @@
     state.view="explore";document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="explore"));
     renderRows();
   }));
+  document.querySelectorAll("[data-quick-stock]").forEach(button=>button.addEventListener("click",()=>{state.selected=button.dataset.quickStock;state.view="explore";renderRows();renderChart();$("#detailSection").scrollIntoView({behavior:"smooth",block:"start"});}));
   $("#stockSearch").addEventListener("input",e=>{state.query=e.target.value;renderRows();});
   $("#searchForm").addEventListener("submit",e=>e.preventDefault());
   $("#sortSelect").addEventListener("change",e=>{state.sort=e.target.value;renderRows();});
