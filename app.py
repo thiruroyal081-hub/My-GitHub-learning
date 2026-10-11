@@ -83,7 +83,10 @@ def market():
             raw = {}
 
         prices = {}
+        changes = {}
         indices = {}
+        index_changes = {}
+
         for symbol, exchange_symbol in STOCK_SYMBOLS.items():
             value = raw.get(exchange_symbol)
             if isinstance(value, dict):
@@ -95,7 +98,26 @@ def market():
             except (TypeError, ValueError):
                 continue
 
-        for key, label in (("NSE_NIFTY", "NIFTY"), ("BSE_SENSEX", "SENSEX")):
+            # Fetch quote metadata so the daily change is also real, not the
+            # static illustrative percentage used in demo mode.
+            try:
+                quote = groww.get_quote(
+                    exchange=GrowwAPI.EXCHANGE_NSE,
+                    segment=GrowwAPI.SEGMENT_CASH,
+                    trading_symbol=symbol,
+                )
+                if isinstance(quote, dict):
+                    day_change = quote.get("day_change_perc")
+                    if day_change is not None:
+                        changes[symbol] = float(day_change)
+            except Exception:
+                # A missing quote detail should not invalidate a valid LTP.
+                continue
+
+        for key, label, exchange, trading_symbol in (
+            ("NSE_NIFTY", "NIFTY", GrowwAPI.EXCHANGE_NSE, "NIFTY"),
+            ("BSE_SENSEX", "SENSEX", GrowwAPI.EXCHANGE_BSE, "SENSEX"),
+        ):
             value = raw.get(key)
             if isinstance(value, dict):
                 value = value.get("ltp") or value.get("value")
@@ -104,6 +126,16 @@ def market():
                 if index_price > 0:
                     indices[label] = index_price
             except (TypeError, ValueError):
+                continue
+            try:
+                quote = groww.get_quote(
+                    exchange=exchange,
+                    segment=GrowwAPI.SEGMENT_CASH,
+                    trading_symbol=trading_symbol,
+                )
+                if isinstance(quote, dict) and quote.get("day_change_perc") is not None:
+                    index_changes[label] = float(quote["day_change_perc"])
+            except Exception:
                 continue
 
         if not prices and not indices:
@@ -115,8 +147,9 @@ def market():
         return jsonify({
             "mode": "live",
             "prices": prices,
-            "changes": {},
+            "changes": changes,
             "indices": indices,
+            "index_changes": index_changes,
         })
     except Exception as exc:
         app.logger.warning("Groww market-data request failed: %s", type(exc).__name__)
