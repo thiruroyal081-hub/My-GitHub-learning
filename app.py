@@ -1,7 +1,7 @@
 """Local Flask backend for the ThiruTrade demo dashboard.
 
 Read-only market data only. This application deliberately contains no order routes.
-Set GROWW_ACCESS_TOKEN in the environment; never commit credentials.
+Set GROWW_ACCESS_TOKEN, or GROWW_API_KEY and GROWW_API_SECRET, in the environment; never commit credentials.
 """
 import os
 from flask import Flask, jsonify, send_from_directory
@@ -32,25 +32,45 @@ def home():
     return send_from_directory(ROOT, "index.html")
 
 
+def get_groww_client():
+    """Create a Groww client using an access token or official API key/secret flow."""
+    token = os.getenv("GROWW_ACCESS_TOKEN", "").strip()
+    if token:
+        return GrowwAPI(token)
+
+    api_key = os.getenv("GROWW_API_KEY", "").strip()
+    api_secret = os.getenv("GROWW_API_SECRET", "").strip()
+    if api_key and api_secret:
+        token_response = GrowwAPI.get_access_token(api_key=api_key, secret=api_secret)
+        if isinstance(token_response, dict):
+            token = token_response.get("access_token") or token_response.get("token")
+        elif isinstance(token_response, str):
+            token = token_response
+        if token:
+            return GrowwAPI(token)
+    return None
+
+
 @app.get("/api/health")
 def health():
-    return jsonify({"ok": True, "mode": "live" if os.getenv("GROWW_ACCESS_TOKEN") else "demo"})
+    configured = bool(os.getenv("GROWW_ACCESS_TOKEN")) or (
+        bool(os.getenv("GROWW_API_KEY")) and bool(os.getenv("GROWW_API_SECRET"))
+    )
+    return jsonify({"ok": True, "mode": "configured" if configured else "demo"})
 
 
 @app.get("/api/market")
 def market():
-    token = os.getenv("GROWW_ACCESS_TOKEN", "").strip()
-    if not token:
-        return jsonify({
-            "mode": "demo",
-            "message": "Set GROWW_ACCESS_TOKEN in the environment to enable market data.",
-            "prices": {},
-            "changes": {},
-            "indices": {},
-        })
-
     try:
-        groww = GrowwAPI(token)
+        groww = get_groww_client()
+        if groww is None:
+            return jsonify({
+                "mode": "demo",
+                "message": "Configure GROWW_ACCESS_TOKEN or GROWW_API_KEY and GROWW_API_SECRET in the backend environment.",
+                "prices": {},
+                "changes": {},
+                "indices": {},
+            })
         request_symbols = tuple(STOCK_SYMBOLS.values()) + ("NSE_NIFTY", "BSE_SENSEX")
         response = groww.get_ltp(
             segment=GrowwAPI.SEGMENT_CASH,
