@@ -1,0 +1,112 @@
+"""Local Flask backend for the ThiruTrade demo dashboard.
+
+Read-only market data only. This application deliberately contains no order routes.
+Set GROWW_ACCESS_TOKEN in the environment; never commit credentials.
+"""
+import os
+from flask import Flask, jsonify, send_from_directory
+from growwapi import GrowwAPI
+
+ROOT = os.path.dirname(os.path.abspath(__file__))
+app = Flask(__name__, static_folder=ROOT, static_url_path="")
+
+# Only instruments shown on the Explore page are queried.
+STOCK_SYMBOLS = {
+    "RELIANCE": "NSE_RELIANCE",
+    "HDFCBANK": "NSE_HDFCBANK",
+    "TCS": "NSE_TCS",
+    "INFY": "NSE_INFY",
+    "ICICIBANK": "NSE_ICICIBANK",
+    "BHARTIARTL": "NSE_BHARTIARTL",
+    "TATAMOTORS": "NSE_TATAMOTORS",
+    "SBIN": "NSE_SBIN",
+    "ITC": "NSE_ITC",
+    "LT": "NSE_LT",
+    "MARUTI": "NSE_MARUTI",
+    "ONGC": "NSE_ONGC",
+}
+
+
+@app.get("/")
+def home():
+    return send_from_directory(ROOT, "index.html")
+
+
+@app.get("/api/health")
+def health():
+    return jsonify({"ok": True, "mode": "live" if os.getenv("GROWW_ACCESS_TOKEN") else "demo"})
+
+
+@app.get("/api/market")
+def market():
+    token = os.getenv("GROWW_ACCESS_TOKEN", "").strip()
+    if not token:
+        return jsonify({
+            "mode": "demo",
+            "message": "Set GROWW_ACCESS_TOKEN in the environment to enable market data.",
+            "prices": {},
+            "changes": {},
+            "indices": {},
+        })
+
+    try:
+        groww = GrowwAPI(token)
+        request_symbols = tuple(STOCK_SYMBOLS.values()) + ("NSE_NIFTY", "BSE_SENSEX")
+        response = groww.get_ltp(
+            segment=GrowwAPI.SEGMENT_CASH,
+            exchange_trading_symbols=request_symbols,
+        )
+        # SDK examples show a direct symbol-to-price mapping. Accept a nested
+        # {"ltp": {...}} response as well for SDK-version compatibility.
+        raw = response.get("ltp", response) if isinstance(response, dict) else {}
+        if not isinstance(raw, dict):
+            raw = {}
+
+        prices = {}
+        indices = {}
+        for symbol, exchange_symbol in STOCK_SYMBOLS.items():
+            value = raw.get(exchange_symbol)
+            if isinstance(value, dict):
+                value = value.get("ltp") or value.get("value")
+            try:
+                price = float(value)
+                if price > 0:
+                    prices[symbol] = price
+            except (TypeError, ValueError):
+                continue
+
+        for key, label in (("NSE_NIFTY", "NIFTY"), ("BSE_SENSEX", "SENSEX")):
+            value = raw.get(key)
+            if isinstance(value, dict):
+                value = value.get("ltp") or value.get("value")
+            try:
+                index_price = float(value)
+                if index_price > 0:
+                    indices[label] = index_price
+            except (TypeError, ValueError):
+                continue
+
+        if not prices and not indices:
+            return jsonify({
+                "mode": "demo",
+                "message": "No supported quotes were returned. Check API access and symbol names.",
+                "prices": {}, "changes": {}, "indices": {},
+            })
+        return jsonify({
+            "mode": "live",
+            "prices": prices,
+            "changes": {},
+            "indices": indices,
+        })
+    except Exception as exc:
+        app.logger.warning("Groww market-data request failed: %s", type(exc).__name__)
+        return jsonify({
+            "mode": "demo",
+            "message": "Groww market data is unavailable. The page is showing sample prices.",
+            "prices": {}, "changes": {}, "indices": {},
+        })
+
+
+if __name__ == "__main__":
+    # Local development only. Do not expose this development server to the internet.
+    app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)
