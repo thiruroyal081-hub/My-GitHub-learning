@@ -51,7 +51,7 @@
         $("#marketStatus").innerHTML=fullCoverage
           ?'<span class="pulse live-pulse"></span> Live Groww API data'
           :'<span class="pulse"></span> Partial quotes · some demo values may remain';
-        renderRows();renderChart();
+        renderRows();renderChart();renderPaper();updateTicket();
       }
     }catch(_){
       $("#dataModeBadge").innerHTML="<i></i> DEMO DATA";
@@ -133,6 +133,65 @@
     state.view="explore";document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="explore"));
     renderRows();
   }));
+
+  // Local-only paper account: never sends orders to any broker.
+  const DEMO_KEY="thiruPaperAccountV1";
+  let paper=loadPaper();
+  let tradeSide="BUY";
+  function loadPaper(){try{const p=JSON.parse(localStorage.getItem(DEMO_KEY)||"null");if(p&&Number.isFinite(p.cash)&&Array.isArray(p.holdings)&&Array.isArray(p.positions)&&Array.isArray(p.orders))return p;}catch(_){}return {cash:100000,holdings:[],positions:[],orders:[],funds:[]};}
+  function savePaper(){try{localStorage.setItem(DEMO_KEY,JSON.stringify(paper));}catch(_){toast("Could not save paper account in this browser.");}}
+  const fmtQty=n=>Number(n).toLocaleString("en-IN",{maximumFractionDigits:4});
+  function currentPrice(symbol){return Number(stockBySymbol(symbol).price)||0;}
+  function showEmpty(id,cols,msg){$(id).innerHTML='<tr><td class="table-empty" colspan="'+cols+'">'+msg+'</td></tr>';}
+  function renderPaper(){
+    $("#demoCash").textContent=money(paper.cash);
+    const holdings=paper.holdings.filter(x=>x.qty>0);
+    $("#holdingsRows").innerHTML=holdings.length?holdings.map(x=>{const p=currentPrice(x.symbol),value=p*x.qty,pnl=value-x.qty*x.avg;return '<tr><td>'+escapeHTML(stockBySymbol(x.symbol).name)+'<br><small>'+x.symbol+'</small></td><td>'+fmtQty(x.qty)+'</td><td>'+money(x.avg)+'</td><td>'+money(value)+'</td><td class="'+(pnl>=0?"positive":"negative")+'">'+(pnl>=0?"+":"")+money(pnl)+'</td></tr>';}).join(""):(showEmpty("#holdingsRows",5,"No demo holdings yet. Buy a delivery stock in the Trade tab to start."),"");
+    $("#positionsRows").innerHTML=paper.positions.length?paper.positions.map((x,i)=>{const p=currentPrice(x.symbol),pnl=(p-x.avg)*x.qty;return '<tr><td>'+escapeHTML(stockBySymbol(x.symbol).name)+'<br><small>'+x.symbol+' · Intraday</small></td><td>'+fmtQty(x.qty)+'</td><td>'+money(x.avg)+'</td><td>'+money(p)+'</td><td class="'+(pnl>=0?"positive":"negative")+'">'+(pnl>=0?"+":"")+money(pnl)+'</td><td><button class="row-action" data-close-position="'+i+'">Close</button></td></tr>';}).join(""):(showEmpty("#positionsRows",6,"No open intraday demo positions."),"");
+    $("#ordersRows").innerHTML=paper.orders.length?paper.orders.slice().reverse().map(o=>'<tr><td>'+escapeHTML(o.time)+'</td><td>'+escapeHTML(stockBySymbol(o.symbol).name)+'<br><small>'+o.symbol+'</small></td><td>'+o.side+' · '+o.product+'</td><td>'+fmtQty(o.qty)+'</td><td>'+money(o.price)+'</td><td><span class="status-pill '+(o.status==="REJECTED"?"rejected":"")+'">'+o.status+'</span></td></tr>').join(""): (showEmpty("#ordersRows",6,"No orders yet. Your demo order history will appear here."),"");
+    const watch=state.watchlist.map(symbol=>stockBySymbol(symbol));
+    $("#watchlistCards").innerHTML=watch.length?watch.map(s=>'<div class="watchlist-stock" data-watch-card="'+s.symbol+'"><strong>'+escapeHTML(s.name)+'</strong><small>'+s.symbol+' · '+escapeHTML(s.sector)+'</small><b>'+money(s.price)+'</b><small class="'+(s.change>=0?"positive":"negative")+'">'+(s.change>=0?"+":"")+s.change.toFixed(2)+'%</small></div>').join(""):'<p class="panel-hint">Your watchlist is empty. Use the ☆ beside a stock to save it.</p>';
+  }
+  function updateTicket(){const symbol=$("#tradeSymbol").value,p=currentPrice(symbol),qty=Math.floor(Number($("#tradeQty").value)||0);$("#ticketPrice").textContent=money(p);$("#orderValue").textContent=money(p*Math.max(0,qty));$("#placePaperOrder").textContent="Place demo "+(tradeSide==="BUY"?"buy":"sell")+" order";$("#placePaperOrder").classList.toggle("sell-order",tradeSide==="SELL");}
+  function findHolding(symbol){return paper.holdings.find(x=>x.symbol===symbol);}
+  function addOrder(symbol,side,product,qty,price,status){paper.orders.push({symbol,side,product,qty,price,status,time:new Date().toLocaleString("en-IN",{dateStyle:"short",timeStyle:"short"})});if(paper.orders.length>200)paper.orders.shift();}
+  function executePaperOrder(){
+    const symbol=$("#tradeSymbol").value,product=$("#tradeProduct").value,qty=Math.floor(Number($("#tradeQty").value)||0),price=currentPrice(symbol),value=qty*price;
+    if(!Number.isInteger(qty)||qty<1||qty>100000){toast("Enter a whole-number quantity between 1 and 100,000.");return;}
+    if(!(price>0)){toast("No usable reference price for this stock.");return;}
+    if(tradeSide==="BUY"){
+      if(value>paper.cash){addOrder(symbol,tradeSide,product,qty,price,"REJECTED");savePaper();renderPaper();toast("Demo order rejected: insufficient cash.");return;}
+      paper.cash-=value;
+      if(product==="DELIVERY"){let h=findHolding(symbol);if(h){h.avg=(h.avg*h.qty+price*qty)/(h.qty+qty);h.qty+=qty;}else paper.holdings.push({symbol,qty,avg:price});}
+      else paper.positions.push({symbol,qty,avg:price});
+      addOrder(symbol,tradeSide,product,qty,price,"COMPLETED");
+      toast("Demo buy completed. No real order was placed.");
+    }else{
+      if(product==="DELIVERY"){
+        const h=findHolding(symbol);
+        if(!h||h.qty<qty){addOrder(symbol,tradeSide,product,qty,price,"REJECTED");savePaper();renderPaper();toast("Demo sell rejected: not enough delivery holdings.");return;}
+        h.qty-=qty;paper.cash+=value;paper.holdings=paper.holdings.filter(x=>x.qty>0);
+      }else{
+        const idx=paper.positions.findIndex(x=>x.symbol===symbol&&x.qty>=qty);
+        if(idx<0){addOrder(symbol,tradeSide,product,qty,price,"REJECTED");savePaper();renderPaper();toast("Demo sell rejected: no matching intraday position.");return;}
+        const pos=paper.positions[idx];pos.qty-=qty;paper.cash+=value;if(pos.qty===0)paper.positions.splice(idx,1);
+      }
+      addOrder(symbol,tradeSide,product,qty,price,"COMPLETED");
+      toast("Demo sell completed. No real order was placed.");
+    }
+    savePaper();renderPaper();
+  }
+  document.querySelectorAll(".workspace-tab").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b===button));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id===button.dataset.panel));if(button.dataset.panel==="watchlistPanel")renderPaper();}));
+  document.querySelectorAll(".subnav [data-view='watchlist']").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel==="watchlistPanel"));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id==="watchlistPanel"));$("#traderWorkspace").scrollIntoView({behavior:"smooth"});renderPaper();}));
+  document.querySelectorAll(".groww-tabs a[href='#mutual-funds']").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel==="fundsPanel"));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id==="fundsPanel"));$("#traderWorkspace").scrollIntoView({behavior:"smooth"});}));
+  $("#tradeSymbol").addEventListener("change",updateTicket);$("#tradeQty").addEventListener("input",updateTicket);
+  document.querySelectorAll("[data-side]").forEach(button=>button.addEventListener("click",()=>{tradeSide=button.dataset.side;document.querySelectorAll("[data-side]").forEach(b=>b.classList.toggle("active",b===button));updateTicket();}));
+  $("#placePaperOrder").addEventListener("click",executePaperOrder);
+  $("#resetDemo").addEventListener("click",()=>{if(!window.confirm("Reset demo cash, holdings, positions and order history? This cannot be undone."))return;paper={cash:100000,holdings:[],positions:[],orders:[],funds:[]};savePaper();renderPaper();toast("Demo account reset.");});
+  $("#clearOrders").addEventListener("click",()=>{paper.orders=[];savePaper();renderPaper();toast("Demo order history cleared.");});
+  $("#positionsRows").addEventListener("click",e=>{const b=e.target.closest("[data-close-position]");if(!b)return;const i=Number(b.dataset.closePosition),pos=paper.positions[i];if(!pos)return;paper.cash+=pos.qty*currentPrice(pos.symbol);addOrder(pos.symbol,"CLOSE","INTRADAY",pos.qty,currentPrice(pos.symbol),"COMPLETED");paper.positions.splice(i,1);savePaper();renderPaper();toast("Intraday demo position closed.");});
+  $("#watchlistCards").addEventListener("click",e=>{const card=e.target.closest("[data-watch-card]");if(!card)return;state.selected=card.dataset.watchCard;renderChart();$("#detailSection").scrollIntoView({behavior:"smooth"});});
+  document.querySelectorAll("[data-fund]").forEach(button=>button.addEventListener("click",()=>{const name=button.dataset.fund;if(!paper.funds.includes(name))paper.funds.push(name);savePaper();$("#fundLearningList").textContent="Learning list: "+paper.funds.join(" · ");toast("Added to your mutual fund learning list.");}));
   document.querySelectorAll("[data-quick-stock]").forEach(button=>button.addEventListener("click",()=>{state.selected=button.dataset.quickStock;state.view="explore";renderRows();renderChart();$("#detailSection").scrollIntoView({behavior:"smooth",block:"start"});}));
   $("#stockSearch").addEventListener("input",e=>{state.query=e.target.value;renderRows();});
   $("#searchForm").addEventListener("submit",e=>e.preventDefault());
@@ -148,6 +207,6 @@
   $("#clearSearch").addEventListener("click",()=>{$("#stockSearch").value="";state.query="";state.filter="all";state.view="explore";document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="all"));document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="explore"));renderRows();});
   document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#stockSearch").focus();}});
   document.querySelectorAll("[data-spark]").forEach((el,i)=>{const values=Array.from({length:22},(_,n)=>16+Math.sin(n*.8+i)*5+n*.42+Math.cos(n*1.9)*2);const min=Math.min(...values),max=Math.max(...values);const pts=values.map((v,n)=>`${n*4.5},${31-(v-min)/(max-min)*27}`).join(" ");el.innerHTML=`<svg viewBox="0 0 96 34" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#00a86b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;});
-  renderRows();renderChart();connectMarketData();
+  renderRows();renderChart();renderPaper();updateTicket();connectMarketData();
   window.setInterval(connectMarketData, 15000);
 })();
