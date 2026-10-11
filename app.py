@@ -163,3 +163,93 @@ def market():
 if __name__ == "__main__":
     # Local development only. Do not expose this development server to the internet.
     app.run(host="127.0.0.1", port=int(os.getenv("PORT", "5000")), debug=False)
+
+# Read-only F&O data endpoints. No order-placement routes are exposed.
+from datetime import datetime, timezone
+from flask import request
+
+FNO_UNDERLYINGS = {
+    "NIFTY": ("NSE", GrowwAPI.EXCHANGE_NSE),
+    "BANKNIFTY": ("NSE", GrowwAPI.EXCHANGE_NSE),
+    "FINNIFTY": ("NSE", GrowwAPI.EXCHANGE_NSE),
+    "SENSEX": ("BSE", GrowwAPI.EXCHANGE_BSE),
+}
+
+def _fno_client():
+    client = get_groww_client()
+    if client is None:
+        return None
+    return client
+
+@app.get("/api/fno/market")
+def fno_market():
+    try:
+        client = _fno_client()
+        if client is None:
+            return jsonify({"mode": "demo", "message": "Backend API credentials are not configured."}), 503
+        indices = {}
+        for symbol, exchange in (("NIFTY", GrowwAPI.EXCHANGE_NSE), ("SENSEX", GrowwAPI.EXCHANGE_BSE)):
+            try:
+                quote = client.get_quote(exchange=exchange, segment=GrowwAPI.SEGMENT_CASH, trading_symbol=symbol)
+                value = quote.get("ltp") if isinstance(quote, dict) else None
+                if value is not None:
+                    indices[symbol] = float(value)
+            except Exception:
+                app.logger.info("Index quote unavailable for %s", symbol)
+        if not indices:
+            return jsonify({"mode": "demo", "message": "No live index quotes returned."}), 502
+        return jsonify({"mode": "live", "indices": indices, "timestamp": datetime.now(timezone.utc).isoformat()})
+    except Exception:
+        return jsonify({"mode": "demo", "message": "Market-data request failed; no sample values are presented as live."}), 502
+
+@app.get("/api/fno/expiries")
+def fno_expiries():
+    underlying = request.args.get("underlying", "NIFTY").upper()
+    if underlying not in FNO_UNDERLYINGS:
+        return jsonify({"message": "Unsupported underlying."}), 400
+    try:
+        client = _fno_client()
+        if client is None:
+            return jsonify({"message": "Configure authorised Groww API credentials on the backend first."}), 503
+        exchange = FNO_UNDERLYINGS[underlying][1]
+        result = client.get_expiries(exchange=exchange, underlying_symbol=underlying)
+        expiries = result.get("expiries", []) if isinstance(result, dict) else []
+        today = datetime.now().date().isoformat()
+        expiries = sorted([str(x) for x in expiries if str(x) >= today])
+        return jsonify({"expiries": expiries, "timestamp": datetime.now(timezone.utc).isoformat()})
+    except Exception as exc:
+        app.logger.warning("F&O expiries unavailable: %s", type(exc).__name__)
+        return jsonify({"message": "Expiry lookup failed. Check API access and the installed Groww SDK version."}), 502
+
+@app.get("/api/fno/option-chain")
+def fno_option_chain():
+    underlying = request.args.get("underlying", "NIFTY").upper()
+    expiry = request.args.get("expiry", "")
+    if underlying not in FNO_UNDERLYINGS:
+        return jsonify({"message": "Unsupported underlying."}), 400
+    try:
+        parsed = datetime.strptime(expiry, "%Y-%m-%d").date()
+        if parsed < datetime.now().date():
+            return jsonify({"message": "Choose a current or future expiry."}), 400
+    except ValueError:
+        return jsonify({"message": "Expiry must be YYYY-MM-DD."}), 400
+    try:
+        client = _fno_client()
+        if client is None:
+            return jsonify({"message": "Configure authorised Groww API credentials on the backend first."}), 503
+        result = client.get_option_chain(
+            exchange=FNO_UNDERLYINGS[underlying][1],
+            underlying=underlying,
+            expiry_date=expiry,
+        )
+        if not isinstance(result, dict) or not isinstance(result.get("strikes"), dict):
+            return jsonify({"message": "The API did not return a supported option-chain payload."}), 502
+        return jsonify({
+            "underlying_ltp": result.get("underlying_ltp"),
+            "strikes": result["strikes"],
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        })
+    except Exception as exc:
+        app.logger.warning("F&O option chain unavailable: %s", type(exc).__name__)
+        return jsonify({"message": "Option-chain lookup failed. Confirm your subscription, API permissions and SDK version."}), 502
+
