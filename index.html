@@ -3,97 +3,71 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#0b1020">
-  <meta name="description" content="Nifty and Sensex options paper trading simulator. Simulation only; no real orders.">
-  <title>F&O Paper Trading | Thiru</title>
+  <meta name="theme-color" content="#ffffff">
+  <meta name="description" content="A stock market explore dashboard and paper trading practice interface.">
+  <title>ThiruTrade — Explore Stocks</title>
   <link rel="stylesheet" href="styles.css">
   <script src="script.js" defer></script>
 </head>
 <body>
   <header class="topbar">
-    <a class="brand" href="./" aria-label="Thiru Paper Trading home"><span class="brand-mark">T</span><span>THIRU<span class="brand-muted">TRADE</span></span></a>
-    <div class="topbar-right"><span class="sim-badge"><span class="status-dot"></span> SIMULATION ONLY</span><span class="market-status">Manual prices</span></div>
+    <a class="brand" href="./" aria-label="ThiruTrade home"><span class="brand-mark">T</span><span class="brand-name">thiru<span>trade</span></span></a>
+    <form class="search-wrap" id="searchForm" role="search">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.8"></circle><path d="m16 16 5 5"></path></svg>
+      <input id="stockSearch" type="search" placeholder="Search stocks, companies..." autocomplete="off" aria-label="Search stocks">
+      <kbd>⌘ K</kbd>
+    </form>
+    <div class="top-actions"><span class="demo-pill"><i></i> DEMO DATA</span><a class="login-link" href="fno-paper-trading/">F&amp;O paper trading <span>↗</span></a></div>
   </header>
 
-  <main class="page-shell">
-    <section class="welcome">
-      <div>
-        <p class="eyebrow">PAPER TRADING TERMINAL</p>
-        <h1>Nifty &amp; Sensex <span>F&amp;O</span></h1>
-        <p class="subheading">Practice options trades, track positions, and learn from your P&amp;L—without risking real money.</p>
-      </div>
-      <div class="capital-card"><span>Virtual starting capital</span><strong id="virtualCapital">₹1,00,000.00</strong><small>Demo balance · Not connected to a broker</small></div>
-    </section>
+  <div class="layout">
+    <aside class="sidebar">
+      <p class="side-label">WORKSPACE</p>
+      <button class="nav-item active" data-view="explore"><span class="nav-icon">◫</span> Explore</button>
+      <button class="nav-item" data-view="watchlist"><span class="nav-icon">☆</span> My watchlist <span id="watchCount" class="nav-count">0</span></button>
+      <a class="nav-item" href="fno-paper-trading/"><span class="nav-icon">⌁</span> F&amp;O simulator <span class="external">↗</span></a>
+      <div class="sidebar-bottom"><div class="learn-icon">i</div><div><strong>Practice safely</strong><p>This is a demo interface. Prices are illustrative, not live market quotes.</p></div></div>
+    </aside>
 
-    <section class="notice" role="note"><span class="notice-icon">i</span><p><strong>Demo mode:</strong> prices are not live. Enter the entry price and latest option price yourself. This page does not place orders or connect to Groww.</p></section>
+    <main class="main-content">
+      <div class="page-heading"><div><p class="eyebrow">MARKETS / INDIA</p><h1 id="pageTitle">Explore stocks</h1><p class="page-subtitle">Discover companies and follow the market in one place.</p></div><span class="market-chip"><span class="pulse"></span> Sample market snapshot</span></div>
 
-    <section class="metrics" aria-label="Trading summary">
-      <article class="metric-card"><span class="metric-label">Open positions</span><strong id="openCount">0</strong><small>Active paper trades</small></article>
-      <article class="metric-card"><span class="metric-label">Unrealized P&amp;L</span><strong id="unrealizedPnl">₹0.00</strong><small>On open positions</small></article>
-      <article class="metric-card"><span class="metric-label">Realized P&amp;L</span><strong id="realizedPnl">₹0.00</strong><small>Closed paper trades</small></article>
-      <article class="metric-card"><span class="metric-label">Total P&amp;L</span><strong id="totalPnl">₹0.00</strong><small>Realized + unrealized</small></article>
-    </section>
+      <section class="index-grid" aria-label="Market index overview">
+        <article class="index-card"><div class="index-top"><span>NIFTY 50</span><span class="index-symbol">N</span></div><strong>24,812.50</strong><div class="index-change positive">+186.40 <span>(+0.76%)</span></div><div class="sparkline" data-spark="nifty"></div></article>
+        <article class="index-card"><div class="index-top"><span>SENSEX</span><span class="index-symbol sensex">S</span></div><strong>81,425.30</strong><div class="index-change positive">+542.10 <span>(+0.67%)</span></div><div class="sparkline" data-spark="sensex"></div></article>
+        <article class="index-card market-note"><div class="index-top"><span>MARKET NOTE</span><span class="note-symbol">✦</span></div><strong>Explore &amp; learn</strong><p>Quotes shown here are sample values for interface testing.</p><a href="fno-paper-trading/">Open F&amp;O practice <span>→</span></a></article>
+      </section>
 
-    <section class="panel trade-panel">
-      <div class="panel-heading"><div><p class="eyebrow">NEW SIMULATED TRADE</p><h2>Build a position</h2></div><span class="step-label">01 / ENTER</span></div>
-      <form id="tradeForm">
-        <div class="form-grid">
-          <label>Underlying
-            <select id="underlying" name="underlying"><option value="NIFTY">NIFTY</option><option value="SENSEX">SENSEX</option></select>
-          </label>
-          <label>Option type
-            <select id="optionType" name="optionType"><option value="CE">CE · Call</option><option value="PE">PE · Put</option></select>
-          </label>
-          <label>Action
-            <select id="side" name="side"><option value="BUY">BUY</option><option value="SELL">SELL</option></select>
-          </label>
-          <label>Expiry
-            <input id="expiry" name="expiry" type="date" required>
-          </label>
-          <label>Strike price
-            <input id="strike" name="strike" type="number" min="0.01" step="0.05" placeholder="e.g. 25000" required>
-          </label>
-          <label>Quantity (units)
-            <input id="quantity" name="quantity" type="number" min="1" step="1" value="1" required>
-          </label>
-          <label>Entry premium (₹)
-            <input id="entryPrice" name="entryPrice" type="number" min="0" step="0.05" placeholder="e.g. 120.50" required>
-          </label>
-          <label>Current premium (₹)
-            <input id="ltp" name="ltp" type="number" min="0" step="0.05" placeholder="Enter latest price" required>
-          </label>
+      <section class="content-section">
+        <div class="section-heading"><div><h2 id="listTitle">Popular stocks</h2><p>Sample prices · not suitable for trading decisions</p></div><label class="sort-label">Sort by <select id="sortSelect"><option value="popular">Popular</option><option value="change">Daily change</option><option value="priceHigh">Price: high to low</option><option value="priceLow">Price: low to high</option><option value="name">Name A–Z</option></select></label></div>
+        <div class="filters" role="group" aria-label="Stock categories">
+          <button class="filter-chip active" data-filter="all">All stocks</button>
+          <button class="filter-chip" data-filter="popular">Popular</button>
+          <button class="filter-chip" data-filter="banking">Banking</button>
+          <button class="filter-chip" data-filter="it">IT</button>
+          <button class="filter-chip" data-filter="energy">Energy</button>
+          <button class="filter-chip" data-filter="auto">Auto</button>
         </div>
-        <div class="form-footer"><p>P&amp;L is calculated from the quantity you enter. Check the applicable lot size before practising a trade.</p><button class="primary-button" type="submit"><span>＋</span> Add paper position</button></div>
-        <p id="formMessage" class="form-message" aria-live="polite"></p>
-      </form>
-    </section>
+        <div class="stock-table-card">
+          <div class="table-scroll"><table><thead><tr><th>Company</th><th>Market price <span class="demo-mark">DEMO</span></th><th>Day change</th><th>Trend</th><th></th></tr></thead><tbody id="stockRows"></tbody></table></div>
+          <div id="noResults" class="no-results" hidden><span>⌕</span><strong>No stocks found</strong><p>Try another company name or category.</p><button id="clearSearch" class="outline-button">Clear search</button></div>
+          <div class="table-footer"><span id="resultCount">Showing sample stocks</span><span>Illustrative data only</span></div>
+        </div>
+      </section>
 
-    <section class="panel positions-panel">
-      <div class="panel-heading positions-heading"><div><p class="eyebrow">YOUR SIMULATED PORTFOLIO</p><h2>Open positions</h2></div><button id="resetButton" class="text-button" type="button">Reset simulator</button></div>
-      <div id="emptyState" class="empty-state"><div class="empty-icon">↗</div><h3>No open positions yet</h3><p>Add a paper trade above to see its premium and profit or loss here.</p></div>
-      <div class="table-wrap" id="positionsTableWrap" hidden>
-        <table>
-          <thead><tr><th>Contract</th><th>Side</th><th>Qty</th><th>Entry ₹</th><th>Current ₹</th><th>P&amp;L ₹</th><th>Action</th></tr></thead>
-          <tbody id="positionsBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <section class="learning-row">
-      <div class="learning-card"><span class="learning-number">01</span><div><h3>Update prices manually</h3><p>Use the update button on a position to enter a new premium and recalculate P&amp;L.</p></div></div>
-      <div class="learning-card"><span class="learning-number">02</span><div><h3>Close to book P&amp;L</h3><p>Closing a position records its simulated result in realized P&amp;L.</p></div></div>
-      <div class="learning-card"><span class="learning-number">03</span><div><h3>Practice responsibly</h3><p>Options are risky. This tool is educational and does not provide trading advice.</p></div></div>
-    </section>
-    <footer><span>THIRUTRADE · F&amp;O PRACTICE</span><span>Paper trading only · No broker orders · Prices are manual</span></footer>
-  </main>
-
-  <dialog id="priceDialog" class="price-dialog">
-    <form id="priceForm" method="dialog">
-      <div class="panel-heading"><div><p class="eyebrow">UPDATE PREMIUM</p><h2>Current option price</h2></div><button type="button" id="cancelPrice" class="close-button" aria-label="Close">×</button></div>
-      <input type="hidden" id="editingPositionId">
-      <label>Latest premium (₹)<input id="newLtp" type="number" min="0" step="0.05" required></label>
-      <div class="dialog-actions"><button type="button" id="cancelPrice2" class="secondary-button">Cancel</button><button type="submit" class="primary-button">Update P&amp;L</button></div>
-    </form>
-  </dialog>
+      <section class="content-section detail-section" id="detailSection">
+        <div class="section-heading"><div><h2>Stock overview</h2><p>Choose a stock above to inspect its sample chart.</p></div><span class="demo-mark large">DEMO CHART</span></div>
+        <div class="detail-card">
+          <div class="detail-top"><div class="company-title"><div id="detailLogo" class="company-logo big">R</div><div><h2 id="detailName">Reliance Industries</h2><p id="detailMeta">RELIANCE · Energy</p></div></div><div class="detail-price"><strong id="detailPrice">₹1,428.00</strong><span id="detailChange" class="positive">+1.24%</span></div></div>
+          <div class="chart-toolbar"><div class="chart-label">Price movement <span>· illustrative</span></div><div class="time-tabs"><button class="time-tab active" data-range="1D">1D</button><button class="time-tab" data-range="1W">1W</button><button class="time-tab" data-range="1M">1M</button><button class="time-tab" data-range="1Y">1Y</button></div></div>
+          <div class="chart-wrap"><svg id="priceChart" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Illustrative sample stock price chart"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a86b" stop-opacity=".18"/><stop offset="100%" stop-color="#00a86b" stop-opacity="0"/></linearGradient></defs><path id="chartArea" d="" fill="url(#chartFill)"></path><path id="chartLine" d="" fill="none" stroke="#00a86b" stroke-width="2.5" vector-effect="non-scaling-stroke"></path></svg></div>
+          <div class="chart-axis"><span id="chartStart">09:15</span><span id="chartMiddle">12:00</span><span id="chartEnd">15:30</span></div>
+          <div class="detail-actions"><button id="watchSelected" class="outline-button">☆ Add to watchlist</button><a class="solid-link" href="fno-paper-trading/">Practice in F&amp;O simulator <span>→</span></a></div>
+        </div>
+      </section>
+      <footer><span>THIRUTRADE</span><span>Independent learning project · Demo data only · Not affiliated with Groww</span></footer>
+    </main>
+  </div>
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 </body>
 </html>
