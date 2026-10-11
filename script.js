@@ -22,6 +22,33 @@
   const escapeHTML = value => String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
   function toast(message){const el=$("#toast");el.textContent=message;el.classList.add("show");clearTimeout(toast.timer);toast.timer=setTimeout(()=>el.classList.remove("show"),2300);}
   function stockBySymbol(symbol){return stockData.find(s=>s.symbol===symbol)||stockData[0];}
+  async function connectMarketData(){
+    try{
+      const response=await fetch("/api/market",{headers:{"Accept":"application/json"}});
+      if(!response.ok)throw new Error("Market API is not available");
+      const payload=await response.json();
+      if(payload.mode!=="live"||!payload.prices)throw new Error("Backend is in demo mode");
+      let updated=0;
+      stockData.forEach(stock=>{
+        const price=Number(payload.prices[stock.symbol]);
+        if(Number.isFinite(price)&&price>0){stock.price=price;updated++;}
+        const change=Number(payload.changes?.[stock.symbol]);
+        if(Number.isFinite(change))stock.change=change;
+      });
+      if(payload.indices?.NIFTY)document.querySelector(".index-card:nth-child(1)>strong").textContent=money(payload.indices.NIFTY);
+      if(payload.indices?.SENSEX)document.querySelector(".index-card:nth-child(2)>strong").textContent=money(payload.indices.SENSEX);
+      if(updated){
+        $("#dataModeBadge").innerHTML="<i></i> LIVE API";
+        $("#dataModeBadge").classList.add("live");
+        $("#marketStatus").innerHTML='<span class="pulse live-pulse"></span> Live Groww API data';
+        renderRows();renderChart();
+        toast("Connected to Groww market data.");
+      }
+    }catch(_){
+      $("#dataModeBadge").innerHTML="<i></i> DEMO DATA";
+      $("#marketStatus").innerHTML='<span class="pulse"></span> Demo snapshot · API not connected';
+    }
+  }
   function visibleStocks(){
     let list=stockData.filter(s=>(state.view!=="watchlist"||state.watchlist.includes(s.symbol))&&(state.filter==="all"||state.filter==="popular"?state.filter==="all"||s.popular<=6||s.category==="popular":s.category===state.filter));
     const q=state.query.trim().toLowerCase();
