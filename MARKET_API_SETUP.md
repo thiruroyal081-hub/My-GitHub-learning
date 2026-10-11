@@ -16,13 +16,22 @@ This Flask app serves the repository's static stock-explore website and exposes 
    python3 -m pip install -r requirements.txt
    ```
 
-3. Set your Groww access token in the current Terminal session. Generate it only through Groww's official API settings and documentation:
+3. Configure credentials in your current Terminal session using one of Groww's official methods:
+
+   **Option A — API key and secret (the SDK generates an access token):**
 
    ```bash
-   export GROWW_ACCESS_TOKEN='PASTE_YOUR_ACCESS_TOKEN_HERE'
+   export GROWW_API_KEY='YOUR_GROWW_API_KEY'
+   export GROWW_API_SECRET='YOUR_GROWW_API_SECRET'
    ```
 
-   Do not paste your token into chat, HTML/JavaScript, or a public GitHub file. The environment variable is local to this Terminal session.
+   **Option B — access token:**
+
+   ```bash
+   export GROWW_ACCESS_TOKEN='YOUR_GROWW_ACCESS_TOKEN'
+   ```
+
+   Use only credentials generated in your Groww Trading APIs settings. The key/secret flow may require daily approval as described by Groww. Never paste credentials into chat or website files, and never commit them to GitHub. These variables are local to this Terminal session.
 
 4. Start the site:
 
@@ -32,7 +41,7 @@ This Flask app serves the repository's static stock-explore website and exposes 
 
 5. Open [http://127.0.0.1:5000](http://127.0.0.1:5000) in Chrome. Keep Terminal open while using it. Stop the server with `Control + C`.
 
-If you don't set a token, or Groww doesn't return supported quotes, the website stays in demo mode. The official Groww SDK may require an active API subscription and supported instrument permissions. Check the current SDK instructions at https://groww.in/trade-api/docs/python-sdk/live-data.
+If you don't configure credentials, or Groww doesn't return supported quotes, the website stays in demo mode. The official Groww SDK may require an active API subscription and supported instrument permissions. Check the current SDK instructions at https://groww.in/trade-api/docs/python-sdk/live-data.
 
 ## GitHub Pages limitation
 
