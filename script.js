@@ -37,7 +37,7 @@
       });
       if(payload.indices?.NIFTY)document.querySelector(".index-card:nth-child(1)>strong").textContent=money(payload.indices.NIFTY);
       if(payload.indices?.SENSEX)document.querySelector(".index-card:nth-child(2)>strong").textContent=money(payload.indices.SENSEX);
-      if(updated){
+      if(updated || Object.keys(payload.indices||{}).length){
         $("#dataModeBadge").innerHTML="<i></i> LIVE API";
         $("#dataModeBadge").classList.add("live");
         $("#marketStatus").innerHTML='<span class="pulse live-pulse"></span> Live Groww API data';
