@@ -101,7 +101,16 @@ document.getElementById('tradeForm').addEventListener('submit',e=>{
 window.updateMark=id=>{const p=state.positions.find(x=>x.id===id),el=document.getElementById('price-'+id),v=Number(el.value);if(!p||!Number.isFinite(v)||v<=0){alert('Enter a valid new price.');return}p.mark=v;save()};
 window.closePos=id=>{const p=state.positions.find(x=>x.id===id),el=document.getElementById('price-'+id),exit=Number(el.value);if(!p||!Number.isFinite(exit)||exit<=0){alert('Enter a valid exit premium.');return}const cashChange=exit*p.lotSize*p.lots,realized=(exit-p.entry)*p.lotSize*p.lots;if(state.cash+cashChange<0){alert('This simulated close would create negative cash.');return}state.cash+=cashChange;state.positions=state.positions.filter(x=>x.id!==id);state.history.push({time:new Date().toLocaleString(),action:'PAPER CLOSE',contract:p.underlying+' '+p.strike+' '+p.type+' '+p.expiry,lots:p.lots,price:exit,cashChange,realized});save()};
 document.getElementById('exportBtn').addEventListener('click',()=>{const rows=[['time','action','contract','lots','price','cash_change','realized_pnl'],...state.history.map(t=>[t.time,t.action,t.contract,t.lots,t.price,t.cashChange,t.realized])];const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download='fno-paper-trades.csv';a.click();URL.revokeObjectURL(a.href)});
-render();
+function updatePayoffCalc(){
+ const v=id=>Number(document.getElementById(id).value)||0;
+ const type=document.getElementById('pcType').value,spot=Math.max(0,v('pcSpot')),strike=Math.max(0,v('pcStrike')),premium=Math.max(0,v('pcPremium')),lot=Math.max(1,Math.floor(v('pcLot'))),lots=Math.max(1,Math.floor(v('pcLots'))),qty=lot*lots;
+ const intrinsic=type==='CE'?Math.max(0,spot-strike):Math.max(0,strike-spot),profit=(intrinsic-premium)*qty,breakeven=type==='CE'?strike+premium:strike-premium;
+ document.getElementById('pcBE').textContent=rupee(Math.max(0,breakeven));document.getElementById('pcMax').textContent=rupee(premium*qty);const out=document.getElementById('pcPL');out.textContent=rupee(profit);out.className=profit>=0?'green':'red';
+ const levels=[Math.max(0,strike-2*premium),Math.max(0,strike-premium),strike,strike+premium,strike+2*premium].filter((x,i,a)=>a.indexOf(x)===i).sort((a,b)=>a-b);
+ document.getElementById('pcRows').innerHTML=levels.map(x=>{const i=type==='CE'?Math.max(0,x-strike):Math.max(0,strike-x),p=(i-premium)*qty;return '<tr><td>'+rupee(x)+'</td><td class="'+(p>=0?'green':'red')+'">'+rupee(p)+'</td></tr>'}).join('');
+}
+['pcType','pcSpot','pcStrike','pcPremium','pcLot','pcLots'].forEach(id=>document.getElementById(id).addEventListener('input',updatePayoffCalc));
+\nrender();updatePayoffCalc();
 </script>
 </body>
 </html>
