@@ -196,7 +196,17 @@
     }
     savePaper();renderPaper();
   }
-  document.querySelectorAll(".workspace-tab").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b===button));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id===button.dataset.panel));if(button.dataset.panel==="watchlistPanel")renderPaper();}));
+
+  document.querySelectorAll("[data-workspace-link]").forEach(link=>link.addEventListener("click",e=>{
+    e.preventDefault();
+    const panel=link.dataset.workspaceLink;
+    document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel===panel));
+    document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id===panel));
+    document.querySelectorAll(".subnav a").forEach(a=>a.classList.toggle("active",a===link));
+    $("#traderWorkspace").scrollIntoView({behavior:"smooth",block:"start"});
+    renderPaper();
+  }));
+\n  document.querySelectorAll(".workspace-tab").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b===button));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id===button.dataset.panel));if(button.dataset.panel==="watchlistPanel")renderPaper();}));
   document.querySelectorAll(".subnav [data-view='watchlist']").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel==="watchlistPanel"));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id==="watchlistPanel"));$("#traderWorkspace").scrollIntoView({behavior:"smooth"});renderPaper();}));
   document.querySelectorAll(".groww-tabs a[href='#mutual-funds']").forEach(button=>button.addEventListener("click",()=>{document.querySelectorAll(".workspace-tab").forEach(b=>b.classList.toggle("active",b.dataset.panel==="fundsPanel"));document.querySelectorAll(".workspace-panel").forEach(p=>p.classList.toggle("active",p.id==="fundsPanel"));$("#traderWorkspace").scrollIntoView({behavior:"smooth"});}));
   $("#tradeSymbol").addEventListener("change",updateTicket);$("#tradeQty").addEventListener("input",updateTicket);
