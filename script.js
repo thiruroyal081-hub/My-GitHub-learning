@@ -37,12 +37,21 @@
       });
       if(payload.indices?.NIFTY)document.querySelector(".index-card:nth-child(1)>strong").textContent=money(payload.indices.NIFTY);
       if(payload.indices?.SENSEX)document.querySelector(".index-card:nth-child(2)>strong").textContent=money(payload.indices.SENSEX);
+      [["NIFTY","niftyChange"],["SENSEX","sensexChange"]].forEach(([key,id])=>{
+        const value=Number(payload.index_changes?.[key]);
+        if(Number.isFinite(value)){
+          const el=$("#"+id);el.className="index-change "+(value>=0?"positive":"negative");
+          el.textContent=(value>=0?"+":"")+value.toFixed(2)+"% day change";
+        }
+      });
       if(updated || Object.keys(payload.indices||{}).length){
-        $("#dataModeBadge").innerHTML="<i></i> LIVE API";
-        $("#dataModeBadge").classList.add("live");
-        $("#marketStatus").innerHTML='<span class="pulse live-pulse"></span> Live Groww API data';
+        const fullCoverage=updated===stockData.length && Boolean(payload.indices?.NIFTY) && Boolean(payload.indices?.SENSEX);
+        $("#dataModeBadge").innerHTML=fullCoverage?"<i></i> LIVE DATA":"<i></i> PARTIAL DATA";
+        $("#dataModeBadge").classList.toggle("live",fullCoverage);
+        $("#marketStatus").innerHTML=fullCoverage
+          ?'<span class="pulse live-pulse"></span> Live Groww API data'
+          :'<span class="pulse"></span> Partial quotes · some demo values may remain';
         renderRows();renderChart();
-        toast("Connected to Groww market data.");
       }
     }catch(_){
       $("#dataModeBadge").innerHTML="<i></i> DEMO DATA";
