@@ -218,7 +218,8 @@
   });
   $("#stockRows").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-symbol]")){e.preventDefault();state.selected=e.target.dataset.symbol;renderRows();renderChart();}});
   $("#watchSelected").addEventListener("click",()=>toggleWatch(state.selected));
-  document.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{state.range=b.dataset.range;renderChart();}));\n  document.querySelectorAll("[data-chart-type]").forEach(b=>b.addEventListener("click",()=>{state.chartType=b.dataset.chartType;renderChart();}));
+  document.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{state.range=b.dataset.range;renderChart();}));
+  document.querySelectorAll("[data-chart-type]").forEach(b=>b.addEventListener("click",()=>{state.chartType=b.dataset.chartType;renderChart();}));
   $("#clearSearch").addEventListener("click",()=>{$("#stockSearch").value="";state.query="";state.filter="all";state.view="explore";document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="all"));document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="explore"));renderRows();});
   document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#stockSearch").focus();}});
   document.querySelectorAll("[data-spark]").forEach((el,i)=>{const values=Array.from({length:22},(_,n)=>16+Math.sin(n*.8+i)*5+n*.42+Math.cos(n*1.9)*2);const min=Math.min(...values),max=Math.max(...values);const pts=values.map((v,n)=>`${n*4.5},${31-(v-min)/(max-min)*27}`).join(" ");el.innerHTML=`<svg viewBox="0 0 96 34" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#00a86b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;});
