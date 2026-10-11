@@ -53,6 +53,18 @@ button{border:0;border-radius:10px;padding:11px 14px;font:inherit;font-weight:75
   <div class="bottom">To mark a position, enter a new price in its row and press Update. To close it, enter your assumed exit premium and press Close.</div>
 </section>
 </div>
+<section class="panel" style="margin-top:14px" id="payoffCalculator">
+<h2>Option payoff &amp; risk calculator</h2><p class="help">Educational expiry estimate for a long option. Use verified contract details; no live quotes are supplied.</p>
+<div class="two">
+<div class="field"><label for="pcType">Option type</label><select id="pcType"><option value="CE">CE · Call</option><option value="PE">PE · Put</option></select></div>
+<div class="field"><label for="pcSpot">Underlying at expiry (₹)</label><input id="pcSpot" type="number" min="0" value="25000"></div>
+<div class="field"><label for="pcStrike">Strike (₹)</label><input id="pcStrike" type="number" min="0" value="25000"></div>
+<div class="field"><label for="pcPremium">Premium per unit (₹)</label><input id="pcPremium" type="number" min="0" value="100"></div>
+<div class="field"><label for="pcLot">Lot size (verify current contract)</label><input id="pcLot" type="number" min="1" step="1" value="1"></div>
+<div class="field"><label for="pcLots">Number of lots</label><input id="pcLots" type="number" min="1" step="1" value="1"></div></div>
+<div class="metrics" style="margin-top:12px"><div class="metric"><small>Breakeven at expiry</small><strong id="pcBE">₹25,100.00</strong></div><div class="metric"><small>Maximum loss</small><strong id="pcMax" class="red">₹100.00</strong></div><div class="metric"><small>Estimated expiry P/L</small><strong id="pcPL">₹-100.00</strong></div></div>
+<div class="tablewrap" style="margin-top:12px"><table><thead><tr><th>Underlying at expiry</th><th>Estimated P/L</th></tr></thead><tbody id="pcRows"></tbody></table></div>
+<p class="help">Excludes charges, slippage, bid/ask spread and changes in option value before expiry. Estimates only, not predictions.</p></section>
 <section class="panel" style="margin-top:14px">
  <div class="sectionhead"><h2>Paper trade history</h2><button class="secondary" id="exportBtn" type="button">Export CSV</button></div>
  <div class="tablewrap" id="historyWrap"></div>
