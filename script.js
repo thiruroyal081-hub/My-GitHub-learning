@@ -15,7 +15,7 @@
     {symbol:"MARUTI",name:"Maruti Suzuki",sector:"Auto",category:"auto",price:12420.00,change:0.38,color:"#e8f5f1",initial:"M",popular:11},
     {symbol:"ONGC",name:"Oil & Natural Gas Corp.",sector:"Energy",category:"energy",price:276.30,change:-0.62,color:"#e6f4ee",initial:"O",popular:12}
   ];
-  const state = {filter:"all",view:"explore",query:"",selected:"RELIANCE",range:"1D",sort:"popular",watchlist:loadWatchlist()};
+  const state = {filter:"all",view:"explore",query:"",selected:"RELIANCE",range:"1D",chartType:"line",sort:"popular",watchlist:loadWatchlist()};
   function loadWatchlist(){try{return JSON.parse(localStorage.getItem("thiruExploreWatchlist")||"[]").filter(x=>stockData.some(s=>s.symbol===x));}catch(_){return [];}}
   function saveWatchlist(){try{localStorage.setItem("thiruExploreWatchlist",JSON.stringify(state.watchlist));}catch(_){toast("Could not save watchlist in this browser.");}}
   const money = n => "₹"+Number(n).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2});
@@ -100,10 +100,24 @@
   function renderChart(){
     const s=stockBySymbol(state.selected),points=chartPath(s.popular,state.range);
     const path=points.map((p,i)=>(i?"L":"M")+p[0].toFixed(1)+" "+p[1].toFixed(1)).join(" ");
-    $("#chartLine").setAttribute("d",path);
-    $("#chartArea").setAttribute("d",path+" L 800 220 L 0 220 Z");
-    $("#chartLine").setAttribute("stroke",s.change>=0?"#00a86b":"#e45d65");
-    $("#chartArea").setAttribute("fill",s.change>=0?"url(#chartFill)":"url(#chartFill)");
+    const line=$("#chartLine"),area=$("#chartArea"),svg=$("#priceChart");
+    line.setAttribute("d",path);line.setAttribute("stroke",s.change>=0?"#00a86b":"#e45d65");
+    area.setAttribute("d",path+" L 800 220 L 0 220 Z");
+    area.setAttribute("fill",s.change>=0?"url(#chartFill)":"url(#chartFill)");
+    let candles=svg.querySelector("#candleLayer");
+    if(!candles){candles=document.createElementNS("http://www.w3.org/2000/svg","g");candles.setAttribute("id","candleLayer");svg.appendChild(candles);}
+    candles.innerHTML="";
+    if(state.chartType==="candle"){
+      line.style.display="none";area.style.display="none";
+      const ns="http://www.w3.org/2000/svg";
+      const vals=points.map((p,i)=>p[1]+Math.sin(i*.91+s.popular)*7+Math.cos(i*.37)*4);
+      for(let i=1;i<points.length;i++){
+        const x=points[i][0],prev=vals[i-1],cur=vals[i],open=Math.min(210,Math.max(10,prev)),close=Math.min(210,Math.max(10,cur));
+        const high=Math.max(8,Math.min(open,close)-4-Math.abs(Math.sin(i*1.31))*9),low=Math.min(215,Math.max(open,close)+4+Math.abs(Math.cos(i*.73))*8),up=cur<prev,color=up?"#e45d65":"#00a878";
+        const wick=document.createElementNS(ns,"line");wick.setAttribute("x1",x);wick.setAttribute("x2",x);wick.setAttribute("y1",high);wick.setAttribute("y2",low);wick.setAttribute("stroke",color);wick.setAttribute("stroke-width","1.3");candles.appendChild(wick);
+        const body=document.createElementNS(ns,"rect");body.setAttribute("x",x-2.2);body.setAttribute("y",Math.min(open,close));body.setAttribute("width","4.4");body.setAttribute("height",Math.max(2,Math.abs(close-open)));body.setAttribute("fill",color);body.setAttribute("rx",".5");candles.appendChild(body);
+      }
+    }else{line.style.display="";area.style.display="";candles.innerHTML="";}
     $("#detailLogo").textContent=s.initial;$("#detailLogo").style.background=s.color;
     $("#detailName").textContent=s.name;$("#detailMeta").textContent=s.symbol+" · "+s.sector+" · Sample quote";
     $("#detailPrice").textContent=money(s.price);
@@ -115,6 +129,7 @@
     $("#chartMiddle").textContent=state.range==="1D"?"12:00":state.range==="1W"?"Wed":"Mid";
     $("#chartEnd").textContent=state.range==="1D"?"15:30":state.range==="1W"?"Fri":"Latest";
     document.querySelectorAll(".time-tab").forEach(b=>b.classList.toggle("active",b.dataset.range===state.range));
+    document.querySelectorAll(".chart-type-tab").forEach(b=>b.classList.toggle("active",b.dataset.chartType===state.chartType));
   }
   function toggleWatch(symbol){
     if(state.watchlist.includes(symbol)){state.watchlist=state.watchlist.filter(x=>x!==symbol);toast("Removed from watchlist");}
@@ -203,7 +218,7 @@
   });
   $("#stockRows").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.matches("[data-symbol]")){e.preventDefault();state.selected=e.target.dataset.symbol;renderRows();renderChart();}});
   $("#watchSelected").addEventListener("click",()=>toggleWatch(state.selected));
-  document.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{state.range=b.dataset.range;renderChart();}));
+  document.querySelectorAll("[data-range]").forEach(b=>b.addEventListener("click",()=>{state.range=b.dataset.range;renderChart();}));\n  document.querySelectorAll("[data-chart-type]").forEach(b=>b.addEventListener("click",()=>{state.chartType=b.dataset.chartType;renderChart();}));
   $("#clearSearch").addEventListener("click",()=>{$("#stockSearch").value="";state.query="";state.filter="all";state.view="explore";document.querySelectorAll("[data-filter]").forEach(b=>b.classList.toggle("active",b.dataset.filter==="all"));document.querySelectorAll("[data-view]").forEach(b=>b.classList.toggle("active",b.dataset.view==="explore"));renderRows();});
   document.addEventListener("keydown",e=>{if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==="k"){e.preventDefault();$("#stockSearch").focus();}});
   document.querySelectorAll("[data-spark]").forEach((el,i)=>{const values=Array.from({length:22},(_,n)=>16+Math.sin(n*.8+i)*5+n*.42+Math.cos(n*1.9)*2);const min=Math.min(...values),max=Math.max(...values);const pts=values.map((v,n)=>`${n*4.5},${31-(v-min)/(max-min)*27}`).join(" ");el.innerHTML=`<svg viewBox="0 0 96 34" preserveAspectRatio="none"><polyline points="${pts}" fill="none" stroke="#00a86b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>`;});
