@@ -6,8 +6,8 @@
   <meta name="theme-color" content="#ffffff">
   <meta name="description" content="A stock market explore dashboard and paper trading practice interface.">
   <title>ThiruTrade — Explore Stocks</title>
-  <link rel="stylesheet" href="styles.css?v=20261011d">
-  <script src="script.js?v=20261011d" defer></script>
+  <link rel="stylesheet" href="styles.css?v=20261016a">
+  <script src="script.js?v=20261016a" defer></script>
 </head>
 <body>
   <header class="topbar">
@@ -22,13 +22,9 @@
 
 
   <nav class="groww-tabs" aria-label="Main navigation"><div class="groww-tabs-inner"><a class="active" href="./">Stocks</a><a href="fno-paper-trading/">F&amp;O</a><a href="#traderWorkspace">Investing tools</a><div class="subnav"><a class="active" href="./">Explore</a><a href="#risk-planner">Risk calculator</a><a href="#sip-planner">SIP calculator</a><a href="#traderWorkspace">Investor toolkit</a><a class="terminal-link" href="#traderWorkspace" data-workspace-link="tradePanel">⚙ Terminal</a></div></div></nav>
-  <div class="market-ticker" aria-label="Sample market indices"><span>NIFTY <strong>22,520.45</strong> <em>+288.65 (1.30%)</em></span><span>SENSEX <strong>72,472.33</strong> <em>+879.09 (1.23%)</em></span><span>BANKNIFTY <strong>55,256.65</strong> <em>+741.60 (1.36%)</em></span><span>MIDCPNIFTY <strong>13,591.35</strong> <em>+204.60 (1.53%)</em></span><span class="ticker-note">SAMPLE VALUES · NOT LIVE</span></div>
-  <section class="groww-showcase" aria-label="Explore market products">
-    <div class="showcase-main"><h2>Bond examples <span class="demo-mark">ILLUSTRATIVE</span></h2><div class="bond-grid"><article class="bond-card"><span class="bond-logo red">A</span><p>Example issuer A</p><small>Jun ’28</small><strong>14.00%</strong><small>20 months <span class="rating">BBB+ ●</span></small></article><article class="bond-card"><span class="bond-logo yellow">✺</span><p>Example issuer B</p><small>Dec ’28</small><strong>12.10%</strong><small>26 months <span class="rating">A- ●</span></small></article><article class="bond-card"><span class="bond-logo purple">C</span><p>Example issuer C</p><small>Apr ’29</small><strong>9.20%</strong><small>30 months <span class="rating">AA+ ●</span></small></article><article class="bond-card"><span class="bond-logo lime">▰</span><p>Example issuer D</p><small>Feb ’28</small><strong>10.45%</strong><small>16 months <span class="rating">A+ ●</span></small></article></div><a class="see-more" href="#stocks">See more ›</a>
-      <h2 class="traded-title" id="stocks">Most traded stocks on ThiruTrade</h2><div class="traded-grid"><button class="traded-card" data-quick-stock="RELIANCE"><span class="stock-badge multicolor">✦</span><span>NSE</span><strong>₹22,520.45</strong><em>+1.30%</em></button><button class="traded-card" data-quick-stock="TCS"><span class="stock-badge blue">T</span><span>TCS · IT</span><strong>Explore stock</strong><em>View details →</em></button><button class="traded-card" data-quick-stock="ICICIBANK"><span class="stock-badge red">◉</span><span>ICICI Bank</span><strong>Explore stock</strong><em>View details →</em></button><button class="traded-card" data-quick-stock="INFY"><span class="stock-badge rainbow">✺</span><span>Infosys</span><strong>Explore stock</strong><em>View details →</em></button></div></div>
-    <aside class="showcase-side"><h2>Sample portfolio</h2><div class="investment-card"><small>Current</small><strong>₹523</strong><div><span>1D returns</span><em>+₹4.65 (0.90%)</em></div><div><span>Total returns</span><em class="loss">-₹51.40 (8.95%)</em></div><div><span>Invested</span><b>₹574</b></div><p>Illustrative figures only · not your account</p></div><h2 class="tools-title">Products &amp; Tools</h2><div class="tools-card"><a href="fno-paper-trading/"><span>📣</span><b>F&amp;O Paper Trading</b><small>Practice safely ↗</small></a><a href="#stocks"><span>▤</span><b>Stocks</b><small>Explore ↗</small></a><a href="#watchlist"><span>☆</span><b>Watchlist</b><small>Track stocks ↗</small></a><a href="#mutual-funds"><span>◉</span><b>Mutual funds</b><small>Coming soon</small></a></div></aside>
-  </section>
-\n  <div class="layout">
+  <div class="simulation-banner" role="note"><strong>SIMULATED DEMO DATA — NOT LIVE MARKET PRICES.</strong> Prices and charts on this page are generated for practice only. Do not use them for real trading decisions.</div>
+
+  <div class="layout">
     <aside class="sidebar">
       <p class="side-label">WORKSPACE</p>
       <button class="nav-item active" data-view="explore"><span class="nav-icon">◫</span> Explore</button>
@@ -38,7 +34,7 @@
     </aside>
 
     <main class="main-content">
-      <div class="page-heading"><div><p class="eyebrow">MARKETS / INDIA</p><h1 id="pageTitle">Explore stocks</h1><p class="page-subtitle">Discover companies and follow the market in one place.</p></div><span class="market-chip" id="marketStatus"><span class="pulse"></span> Sample market snapshot</span></div>
+      <div class="page-heading"><div><p class="eyebrow">MARKETS / INDIA</p><h1 id="pageTitle">Explore stocks</h1><p class="page-subtitle">Explore sample stocks, watchlist tools and practice calculators. No live quotes or real orders.</p></div><span class="market-chip" id="marketStatus"><span class="pulse"></span> Sample market snapshot</span></div>
 
       <section class="index-grid" aria-label="Market index overview">
         <article class="index-card"><div class="index-top"><span>NIFTY 50</span><span class="index-symbol">N</span></div><strong>24,812.50</strong><div id="niftyChange" class="index-change positive">+186.40 <span>(+0.76%)</span></div><div class="sparkline" data-spark="nifty"></div></article>
@@ -67,7 +63,7 @@
         <div class="section-heading"><div><h2>Stock overview</h2><p>Choose a stock above to inspect its sample chart.</p></div><span class="demo-mark large">DEMO CHART</span></div>
         <div class="detail-card">
           <div class="detail-top"><div class="company-title"><div id="detailLogo" class="company-logo big">R</div><div><h2 id="detailName">Reliance Industries</h2><p id="detailMeta">RELIANCE · Energy</p></div></div><div class="detail-price"><strong id="detailPrice">₹1,428.00</strong><span id="detailChange" class="positive">+1.24%</span></div></div>
-          <div class="chart-toolbar"><div class="chart-label">Price movement <span>· illustrative</span></div><div class="chart-controls"><div class="chart-type-tabs"><button class="chart-type-tab active" data-chart-type="line">Line</button><button class="chart-type-tab" data-chart-type="candle">Candles</button></div><div class="time-tabs"><button class="time-tab active" data-range="1D">1D</button><button class="time-tab" data-range="1W">1W</button><button class="time-tab" data-range="1M">1M</button><button class="time-tab" data-range="1Y">1Y</button></div></div></div>
+          <div class="chart-toolbar"><div class="chart-label">Price movement <span>· illustrative</span></div><div class="chart-controls"><div class="chart-type-tabs"><button class="chart-type-tab active" data-chart-type="line">Line</button><button class="chart-type-tab" data-chart-type="candle">Candles</button></div><span class="demo-mark">SIMULATED MOVEMENT</span></div></div>
           <div class="chart-wrap"><div id="chartEmpty" class="chart-empty" hidden>Preparing sample chart…</div><svg id="priceChart" viewBox="0 0 800 220" preserveAspectRatio="none" role="img" aria-label="Illustrative sample stock price chart"><defs><linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#00a86b" stop-opacity=".18"/><stop offset="100%" stop-color="#00a86b" stop-opacity="0"/></linearGradient></defs><path id="chartArea" d="" fill="url(#chartFill)"></path><path id="chartLine" d="" fill="none" stroke="#00a86b" stroke-width="2.5" vector-effect="non-scaling-stroke"></path></svg></div>
           <div class="chart-axis"><span id="chartStart">09:15</span><span id="chartMiddle">12:00</span><span id="chartEnd">15:30</span></div>
           <div class="detail-actions"><button id="watchSelected" class="outline-button">☆ Add to watchlist</button><a class="solid-link" href="fno-paper-trading/">Practice in F&amp;O simulator <span>→</span></a></div>
